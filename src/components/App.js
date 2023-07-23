@@ -1,10 +1,14 @@
+
 import React, { Component } from 'react';
 import Searchbar from './Searchbar';
 import ImageGallery from './ImageGallery';
 import Button from './Button';
 import Modal from './Modal';
 import Loader from './Loader';
+import fetchImages from './Api';
 import '../styles/styles.css';
+
+const IMAGES_PER_PAGE = 12;
 
 class App extends Component {
   state = {
@@ -13,27 +17,30 @@ class App extends Component {
     isLoading: false,
     page: 1,
     largeImageURL: '',
+    totalPages: null,
   };
 
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.query !== this.state.query || prevState.page !== this.state.page) {
+      this.fetchImages();
+    }
+  }
+
   handleSubmit = (query) => {
-    this.setState({ query, images: [], page: 1 }, this.fetchImages);
+    this.setState({ query, images: [], page: 1, totalPages: null });
   };
 
   fetchImages = () => {
     const { query, page } = this.state;
-    const API_KEY = '37136266-a42a32582919092089cbd6d65';
-    const BASE_URL = 'https://pixabay.com/api/';
-    const PER_PAGE = 12;
 
     this.setState({ isLoading: true });
 
-    fetch(`${BASE_URL}?q=${query}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=${PER_PAGE}`)
-      .then((response) => response.json())
+    fetchImages(query, page)
       .then((data) => {
         this.setState((prevState) => ({
           images: [...prevState.images, ...data.hits],
+          totalPages: Math.ceil(data.totalHits / IMAGES_PER_PAGE),
           isLoading: false,
-          page: prevState.page + 1,
         }));
       })
       .catch((error) => {
@@ -43,7 +50,7 @@ class App extends Component {
   };
 
   handleLoadMore = () => {
-    this.fetchImages();
+    this.setState((prevState) => ({ page: prevState.page + 1 }), this.fetchImages);
   };
 
   handleImageClick = (largeImageURL) => {
@@ -55,15 +62,17 @@ class App extends Component {
   };
 
   render() {
-    const { images, isLoading, largeImageURL } = this.state;
+    const { images, isLoading, largeImageURL, page, totalPages } = this.state;
 
     return (
       <div className="App">
         <Searchbar onSubmit={this.handleSubmit} />
-        {isLoading && <Loader />} {/* Відображення лоадера під час завантаження зображень */}
+        {isLoading && <Loader />}
         <ImageGallery images={images} onImageClick={this.handleImageClick} />
-        {images.length > 0 && !isLoading && <Button onClick={this.handleLoadMore} />} {/* Відображення кнопки "Load more" */}
-        {largeImageURL && <Modal src={largeImageURL} alt="Large" onClose={this.handleCloseModal} />} {/* Відображення модального вікна */}
+        {page < totalPages && images.length > 0 && !isLoading && (
+          <Button onClick={this.handleLoadMore} />
+        )}
+        {largeImageURL && <Modal src={largeImageURL} alt="Large" onClose={this.handleCloseModal} />}
       </div>
     );
   }

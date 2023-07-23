@@ -1,14 +1,14 @@
 
-// import React from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import ImageGalleryItem from './ImageGalleryItem';
 
 const ImageGallery = ({ images, onImageClick }) => {
   return (
     <ul className="ImageGallery">
-      {images.map((image) => (
+      {images.map((image, index) => (
         <ImageGalleryItem
-          key={image.id}
+          key={index}
           src={image.webformatURL}
           alt={image.tags}
           onClick={() => onImageClick(image.largeImageURL)}
